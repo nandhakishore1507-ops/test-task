@@ -1,0 +1,217 @@
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    background: #0b1120;
+    color: #e5e7eb;
+    font-family: Arial, sans-serif;
+    padding: 25px;
+}
+
+header {
+    text-align: center;
+    padding: 30px 15px;
+    margin-bottom: 25px;
+}
+
+header h1 {
+    color: #60a5fa;
+    margin-bottom: 10px;
+}
+
+header p {
+    color: #9ca3af;
+    margin-bottom: 20px;
+}
+
+.launch-btn {
+    display: inline-block;
+    background: #2563eb;
+    color: white;
+    text-decoration: none;
+    padding: 12px 20px;
+    border-radius: 8px;
+    margin-top: 10px;
+}
+
+.launch-btn:hover {
+    background: #1d4ed8;
+}
+
+main {
+    max-width: 950px;
+    margin: auto;
+}
+
+h2 {
+    color: #60a5fa;
+    margin: 25px 0 15px;
+}
+
+.summary {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 15px;
+}
+
+.summary-card {
+    background: #172033;
+    padding: 20px;
+    border-radius: 10px;
+    text-align: center;
+}
+
+.summary-card h3 {
+    color: #9ca3af;
+    font-size: 14px;
+    margin-bottom: 10px;
+}
+
+.summary-card p {
+    font-size: 28px;
+    font-weight: bold;
+    color: #60a5fa;
+}
+
+.progress-section,
+.instructions,
+.test-card,
+.final-result {
+    background: #172033;
+    padding: 20px;
+    margin-top: 20px;
+    border-radius: 10px;
+}
+
+.progress-info {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 10px;
+}
+
+.progress-track {
+    background: #374151;
+    height: 12px;
+    border-radius: 20px;
+    overflow: hidden;
+}
+
+#progressBar {
+    height: 100%;
+    width: 0%;
+    background: #3b82f6;
+    transition: width 0.3s;
+}
+
+.instructions ol {
+    padding-left: 22px;
+    line-height: 1.9;
+}
+
+.instructions p {
+    color: #fbbf24;
+    margin-top: 12px;
+    line-height: 1.5;
+}
+
+.test-card {
+    border-left: 4px solid #64748b;
+}
+
+.test-card.pass {
+    border-left-color: #22c55e;
+}
+
+.test-card.fail {
+    border-left-color: #ef4444;
+}
+
+.test-card.blocked {
+    border-left-color: #f59e0b;
+}
+
+.test-card h3 {
+    color: #93c5fd;
+    margin-bottom: 12px;
+}
+
+.test-card p {
+    line-height: 1.6;
+    margin-bottom: 10px;
+    color: #cbd5e1;
+}
+
+label {
+    display: block;
+    margin: 12px 0 7px;
+    color: #93c5fd;
+    font-weight: bold;
+}
+
+select,
+textarea {
+    width: 100%;
+    padding: 12px;
+    background: #0b1120;
+    color: white;
+    border: 1px solid #475569;
+    border-radius: 7px;
+    font-size: 14px;
+}
+
+textarea {
+    min-height: 65px;
+    resize: vertical;
+}
+
+button {
+    padding: 12px 18px;
+    background: #2563eb;
+    border: none;
+    color: white;
+    border-radius: 7px;
+    cursor: pointer;
+    margin: 10px 8px 0 0;
+}
+
+button:hover {
+    background: #1d4ed8;
+}
+
+.reset-btn {
+    background: #dc2626;
+}
+
+.reset-btn:hover {
+    background: #b91c1c;
+}
+
+#finalMessage {
+    color: #cbd5e1;
+    margin-bottom: 10px;
+}
+
+#report {
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+    margin-top: 20px;
+    padding: 15px;
+    background: #0b1120;
+    border-radius: 8px;
+    color: #86efac;
+    line-height: 1.6;
+}
+
+@media (max-width: 650px) {
+    body {
+        padding: 12px;
+    }
+
+    .summary {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}

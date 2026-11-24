@@ -1,0 +1,509 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TaskFlow - Unit Test Runner</title>
+
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: #0b1120;
+            color: #e5e7eb;
+            font-family: Arial, sans-serif;
+            padding: 30px;
+        }
+
+        .container {
+            max-width: 850px;
+            margin: auto;
+        }
+
+        h1 {
+            color: #60a5fa;
+            margin-bottom: 10px;
+        }
+
+        .subtitle {
+            color: #9ca3af;
+            margin-bottom: 25px;
+        }
+
+        .summary {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 25px;
+            flex-wrap: wrap;
+        }
+
+        .summary-card {
+            flex: 1;
+            min-width: 130px;
+            background: #172033;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+        }
+
+        .summary-card h3 {
+            color: #9ca3af;
+            font-size: 14px;
+        }
+
+        .summary-card p {
+            font-size: 28px;
+            margin-top: 10px;
+            color: #60a5fa;
+        }
+
+        #testResults {
+            display: grid;
+            gap: 12px;
+        }
+
+        .test-card {
+            background: #172033;
+            padding: 18px;
+            border-radius: 9px;
+            border-left: 4px solid #64748b;
+        }
+
+        .test-card.pass {
+            border-left-color: #22c55e;
+        }
+
+        .test-card.fail {
+            border-left-color: #ef4444;
+        }
+
+        .test-card h3 {
+            margin-bottom: 8px;
+        }
+
+        .test-card p {
+            color: #9ca3af;
+            font-size: 14px;
+        }
+
+        .status {
+            display: inline-block;
+            margin-top: 10px;
+            font-size: 13px;
+            font-weight: bold;
+        }
+
+        .pass-text {
+            color: #22c55e;
+        }
+
+        .fail-text {
+            color: #ef4444;
+        }
+
+        button {
+            background: #2563eb;
+            color: white;
+            border: none;
+            padding: 13px 22px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 15px;
+            margin-top: 22px;
+        }
+
+        button:hover {
+            background: #1d4ed8;
+        }
+
+        button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        /* Refresh icon animation */
+        .refresh-icon {
+            display: inline-block;
+            font-size: 18px;
+            margin-right: 5px;
+        }
+
+        .refresh-icon.spin {
+            animation: refreshSpin 0.7s ease;
+        }
+
+        @keyframes refreshSpin {
+            from {
+                transform: rotate(0deg);
+            }
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        /* Result refresh animation */
+        .refreshing {
+            animation: resultRefresh 0.5s ease;
+        }
+
+        @keyframes resultRefresh {
+            from {
+                opacity: 0;
+                transform: translateY(12px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .success-message {
+            color: #22c55e;
+            margin-top: 20px;
+            font-weight: bold;
+        }
+
+        @media (max-width: 600px) {
+            body {
+                padding: 15px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+<div class="container">
+
+    <h1>TaskFlow Unit Test Runner</h1>
+    <p class="subtitle">Phase 3 - Testing and Quality Assurance</p>
+
+    <div class="summary">
+
+        <div class="summary-card">
+            <h3>Total Tests</h3>
+            <p id="total">0</p>
+        </div>
+
+        <div class="summary-card">
+            <h3>Passed</h3>
+            <p id="passed">0</p>
+        </div>
+
+        <div class="summary-card">
+            <h3>Failed</h3>
+            <p id="failed">0</p>
+        </div>
+
+    </div>
+
+    <div id="testResults"></div>
+
+    <p id="successMessage" class="success-message"></p>
+
+    <button id="runButton" onclick="runAgain()">
+        <span id="refreshIcon" class="refresh-icon">↻</span>
+        Run Again
+    </button>
+
+</div>
+
+<script>
+
+// TASKFLOW LOGIC
+const TaskLogic = {
+
+    validateTask(title) {
+        return typeof title === "string" &&
+               title.trim().length > 0;
+    },
+
+    addTask(tasks, task) {
+        if (!this.validateTask(task.title)) {
+            throw new Error("Task title cannot be empty");
+        }
+
+        return [...tasks, task];
+    },
+
+    deleteTask(tasks, id) {
+        return tasks.filter(task => task.id !== id);
+    },
+
+    searchTasks(tasks, keyword) {
+        const search = keyword.trim().toLowerCase();
+
+        return tasks.filter(task =>
+            task.title.toLowerCase().includes(search)
+        );
+    },
+
+    updateStatus(tasks, id, status) {
+        if (!["pending", "completed"].includes(status)) {
+            throw new Error("Invalid task status");
+        }
+
+        return tasks.map(task =>
+            task.id === id ? {...task, status} : task
+        );
+    },
+
+    calculateProgress(tasks) {
+        if (tasks.length === 0) return 0;
+
+        const completed = tasks.filter(
+            task => task.status === "completed"
+        ).length;
+
+        return Math.round(
+            completed / tasks.length * 100
+        );
+    }
+};
+
+
+// ASSERTION FUNCTION
+function assertEqual(actual, expected, message) {
+
+    if (JSON.stringify(actual) === JSON.stringify(expected)) {
+        return {
+            passed: true,
+            message: message
+        };
+    }
+
+    return {
+        passed: false,
+        message: message + 
+            " | Expected: " + expected +
+            ", Received: " + actual
+    };
+}
+
+
+// TEST CASES
+function runTests() {
+
+    const tests = [];
+
+    // Test 1: Valid task title
+    tests.push(
+        assertEqual(
+            TaskLogic.validateTask("Learn JavaScript"),
+            true,
+            "Valid task title"
+        )
+    );
+
+    // Test 2: Empty task title
+    tests.push(
+        assertEqual(
+            TaskLogic.validateTask("   "),
+            false,
+            "Reject empty task"
+        )
+    );
+
+    // Test 3: Add task
+    const task = {
+        id: 1,
+        title: "Study HTML",
+        status: "pending"
+    };
+
+    const added = TaskLogic.addTask([], task);
+
+    tests.push(
+        assertEqual(
+            added.length,
+            1,
+            "Add new task"
+        )
+    );
+
+    // Test 4: Delete task
+    const deleted = TaskLogic.deleteTask([task], 1);
+
+    tests.push(
+        assertEqual(
+            deleted.length,
+            0,
+            "Delete task"
+        )
+    );
+
+    // Test 5: Search task
+    const searchResult = TaskLogic.searchTasks(
+        [
+            {id: 1, title: "Learn HTML"},
+            {id: 2, title: "Learn Python"}
+        ],
+        "html"
+    );
+
+    tests.push(
+        assertEqual(
+            searchResult.length,
+            1,
+            "Search task"
+        )
+    );
+
+    // Test 6: Update task status
+    const updated = TaskLogic.updateStatus(
+        [task],
+        1,
+        "completed"
+    );
+
+    tests.push(
+        assertEqual(
+            updated[0].status,
+            "completed",
+            "Update task status"
+        )
+    );
+
+    // Test 7: Calculate progress
+    const progress = TaskLogic.calculateProgress([
+        {status: "completed"},
+        {status: "pending"}
+    ]);
+
+    tests.push(
+        assertEqual(
+            progress,
+            50,
+            "Calculate progress"
+        )
+    );
+
+    // Test 8: Empty task list
+    const emptyProgress = TaskLogic.calculateProgress([]);
+
+    tests.push(
+        assertEqual(
+            emptyProgress,
+            0,
+            "Empty task list progress"
+        )
+    );
+
+    return tests;
+}
+
+
+// DISPLAY TEST RESULTS
+function displayResults() {
+
+    const tests = runTests();
+
+    const container = document.getElementById("testResults");
+
+    container.innerHTML = "";
+
+    let passed = 0;
+    let failed = 0;
+
+    tests.forEach((test, index) => {
+
+        const card = document.createElement("div");
+
+        card.className = "test-card " +
+            (test.passed ? "pass" : "fail");
+
+        const heading = document.createElement("h3");
+        heading.textContent =
+            "Test " + (index + 1);
+
+        const description = document.createElement("p");
+        description.textContent = test.message;
+
+        const status = document.createElement("span");
+        status.className = "status " +
+            (test.passed ? "pass-text" : "fail-text");
+
+        status.textContent =
+            test.passed ? "✓ PASS" : "✗ FAIL";
+
+        card.appendChild(heading);
+        card.appendChild(description);
+        card.appendChild(status);
+
+        container.appendChild(card);
+
+        if (test.passed) {
+            passed++;
+        } else {
+            failed++;
+        }
+    });
+
+    document.getElementById("total").textContent =
+        tests.length;
+
+    document.getElementById("passed").textContent =
+        passed;
+
+    document.getElementById("failed").textContent =
+        failed;
+
+    document.getElementById("successMessage").textContent =
+        failed === 0
+            ? "All unit tests passed successfully!"
+            : "Some tests failed. Check the results above.";
+
+}
+
+
+// RUN AGAIN WITH ANIMATION
+function runAgain() {
+
+    const button = document.getElementById("runButton");
+    const icon = document.getElementById("refreshIcon");
+    const results = document.getElementById("testResults");
+
+    button.disabled = true;
+    button.innerHTML =
+        '<span id="refreshIcon" class="refresh-icon spin">↻</span> Running...';
+
+    // Fade out old results
+    results.style.opacity = "0";
+
+    setTimeout(() => {
+
+        // Run tests again
+        displayResults();
+
+        // Apply refresh animation
+        results.classList.remove("refreshing");
+
+        void results.offsetWidth;
+
+        results.classList.add("refreshing");
+
+        results.style.opacity = "1";
+
+        // Restore button
+        button.innerHTML =
+            '<span id="refreshIcon" class="refresh-icon">↻</span> Run Again';
+
+        button.disabled = false;
+
+    }, 700);
+
+}
+
+
+// Run tests automatically when page opens
+displayResults();
+
+</script>
+
+</body>
+</html>

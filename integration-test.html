@@ -1,0 +1,419 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TaskFlow Integration Testing</title>
+
+<style>
+* {
+    box-sizing: border-box;
+}
+
+body {
+    background: #0b1120;
+    color: white;
+    font-family: Arial, sans-serif;
+    padding: 30px;
+}
+
+.container {
+    max-width: 850px;
+    margin: auto;
+}
+
+h1 {
+    color: #38bdf8;
+    margin-bottom: 10px;
+}
+
+.subtitle {
+    color: #94a3b8;
+    margin-bottom: 25px;
+}
+
+.card {
+    background: #172033;
+    border: 1px solid #334155;
+    padding: 20px;
+    border-radius: 10px;
+    margin-bottom: 20px;
+}
+
+input {
+    width: 100%;
+    padding: 12px;
+    background: #0b1120;
+    border: 1px solid #334155;
+    color: white;
+    border-radius: 6px;
+    margin: 10px 0;
+}
+
+button {
+    background: #0284c7;
+    color: white;
+    padding: 11px 18px;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+}
+
+.results {
+    margin-top: 20px;
+}
+
+.test-item {
+    padding: 14px;
+    background: #0f192b;
+    border-radius: 6px;
+    margin-bottom: 10px;
+    display: flex;
+    justify-content: space-between;
+    gap: 10px;
+}
+
+.pass {
+    color: #4ade80;
+}
+
+.fail {
+    color: #f87171;
+}
+
+.summary {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+}
+
+.summary div {
+    background: #172033;
+    padding: 18px;
+    border-radius: 8px;
+}
+
+.summary h2 {
+    margin-bottom: 5px;
+}
+
+@media(max-width: 550px) {
+    .summary {
+        grid-template-columns: 1fr;
+    }
+}
+</style>
+</head>
+
+<body>
+
+<div class="container">
+
+<h1>TaskFlow Integration Testing</h1>
+
+<p class="subtitle">
+Testing communication between application modules.
+</p>
+
+<div class="card">
+
+<h2>Test Application</h2>
+
+<input type="text" id="taskInput"
+placeholder="Enter a task to test...">
+
+<button onclick="runIntegrationTests()">
+Run Integration Tests
+</button>
+
+</div>
+
+<div class="summary">
+
+<div>
+<p>Total Tests</p>
+<h2 id="total">0</h2>
+</div>
+
+<div>
+<p>Passed</p>
+<h2 class="pass" id="passed">0</h2>
+</div>
+
+<div>
+<p>Failed</p>
+<h2 class="fail" id="failed">0</h2>
+</div>
+
+</div>
+
+<div class="card results">
+
+<h2>Integration Results</h2>
+
+<div id="results">
+Click Run Integration Tests.
+</div>
+
+</div>
+
+</div>
+<center>
+<a href="index.html">Click to open task remainder</a>
+</center>
+
+<script>
+
+// TASK LOGIC
+
+const TaskLogic = {
+
+    validateTask(title) {
+        return typeof title === "string" &&
+               title.trim().length > 0;
+    },
+
+    addTask(tasks, task) {
+        if (!this.validateTask(task.title)) {
+            throw new Error("Invalid task");
+        }
+
+        return [...tasks, task];
+    },
+
+    deleteTask(tasks, id) {
+        return tasks.filter(task => task.id !== id);
+    },
+
+    updateStatus(tasks, id, status) {
+        if (!["pending", "completed"].includes(status)) {
+            throw new Error("Invalid status");
+        }
+
+        return tasks.map(task =>
+            task.id === id ? {...task, status} : task
+        );
+    },
+
+    searchTasks(tasks, keyword) {
+        const search = keyword.trim().toLowerCase();
+
+        return tasks.filter(task =>
+            task.title.toLowerCase().includes(search)
+        );
+    },
+
+    calculateProgress(tasks) {
+        if (tasks.length === 0) return 0;
+
+        const completed = tasks.filter(
+            task => task.status === "completed"
+        ).length;
+
+        return Math.round(completed / tasks.length * 100);
+    }
+
+};
+
+
+// TEST VARIABLES
+
+let passed = 0;
+let failed = 0;
+
+const STORAGE_KEY = "taskflow_integration_test";
+
+
+// ASSERT FUNCTION
+
+function assert(condition, message) {
+    if (!condition) {
+        throw new Error(message);
+    }
+}
+
+
+// TEST RUNNER
+
+function test(name, callback) {
+
+    const results = document.getElementById("results");
+
+    try {
+        callback();
+
+        passed++;
+
+        results.innerHTML += `
+        <div class="test-item">
+            ${name}
+            <strong class="pass">PASS</strong>
+        </div>`;
+
+    } catch(error) {
+
+        failed++;
+
+        results.innerHTML += `
+        <div class="test-item">
+            ${name}: ${error.message}
+            <strong class="fail">FAIL</strong>
+        </div>`;
+    }
+
+}
+
+
+// INTEGRATION TESTS
+
+function runIntegrationTests() {
+
+    passed = 0;
+    failed = 0;
+
+    document.getElementById("results").innerHTML = "";
+
+    let tasks = [];
+
+    const sampleTitle =
+        document.getElementById("taskInput").value.trim()
+        || "Integration Test Task";
+
+    // IT01: ADD TASK + DASHBOARD
+
+    test("IT01 - Add Task and Dashboard", () => {
+
+        tasks = TaskLogic.addTask(tasks, {
+            id: 1,
+            title: sampleTitle,
+            status: "pending"
+        });
+
+        const total = tasks.length;
+
+        assert(total === 1, "Dashboard count incorrect");
+
+    });
+
+
+    // IT02: TASK + LOCAL STORAGE
+
+    test("IT02 - Task and Local Storage", () => {
+
+        localStorage.setItem(
+            STORAGE_KEY,
+            JSON.stringify(tasks)
+        );
+
+        const saved = JSON.parse(
+            localStorage.getItem(STORAGE_KEY)
+        );
+
+        assert(saved.length === 1, "Task not saved");
+
+    });
+
+
+    // IT03: COMPLETE + PROGRESS
+
+    test("IT03 - Status and Progress", () => {
+
+        tasks = TaskLogic.updateStatus(
+            tasks, 1, "completed"
+        );
+
+        const progress =
+            TaskLogic.calculateProgress(tasks);
+
+        assert(progress === 100, "Progress not updated");
+
+    });
+
+
+    // IT04: SEARCH + TASK LIST
+
+    test("IT04 - Search and Task List", () => {
+
+        const result = TaskLogic.searchTasks(
+            tasks, sampleTitle
+        );
+
+        assert(result.length === 1, "Search failed");
+
+    });
+
+
+    // IT05: EDIT + STORAGE
+
+    test("IT05 - Edit and Save Task", () => {
+
+        tasks = tasks.map(task =>
+            task.id === 1
+                ? {...task, title: "Updated Integration Task"}
+                : task
+        );
+
+        localStorage.setItem(
+            STORAGE_KEY,
+            JSON.stringify(tasks)
+        );
+
+        const saved = JSON.parse(
+            localStorage.getItem(STORAGE_KEY)
+        );
+
+        assert(
+            saved[0].title === "Updated Integration Task",
+            "Updated task not saved"
+        );
+
+    });
+
+
+    // IT06: DELETE + DASHBOARD
+
+    test("IT06 - Delete and Dashboard", () => {
+
+        tasks = TaskLogic.deleteTask(tasks, 1);
+
+        assert(tasks.length === 0, "Task not deleted");
+
+    });
+
+
+    // IT07: REFRESH + STORAGE
+
+    test("IT07 - Refresh and Local Storage", () => {
+
+        const restored = JSON.parse(
+            localStorage.getItem(STORAGE_KEY)
+        );
+
+        assert(
+            restored.length === 1,
+            "Saved task could not be restored"
+        );
+
+    });
+
+
+    // FINAL REPORT
+
+    document.getElementById("total").textContent =
+        passed + failed;
+
+    document.getElementById("passed").textContent =
+        passed;
+
+    document.getElementById("failed").textContent =
+        failed;
+
+    localStorage.removeItem(STORAGE_KEY);
+
+}
+
+</script>
+
+</body>
+</html>

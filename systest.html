@@ -1,0 +1,379 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TaskFlow - System Testing</title>
+    <link rel="stylesheet" href="systest.css">
+</head>
+<body>
+
+    <header>
+        <h1>TaskFlow System Testing</h1>
+        <p>Phase 3 - Testing and Quality Assurance</p>
+        <a href="index.html" target="_blank" class="launch-btn">
+            Open TaskFlow Application ↗
+        </a>
+    </header>
+
+    <main>
+        <section class="summary">
+            <div class="summary-card">
+                <h3>Total Tests</h3>
+                <p id="total">12</p>
+            </div>
+
+            <div class="summary-card">
+                <h3>Passed</h3>
+                <p id="passed">0</p>
+            </div>
+
+            <div class="summary-card">
+                <h3>Failed</h3>
+                <p id="failed">0</p>
+            </div>
+
+            <div class="summary-card">
+                <h3>Not Tested</h3>
+                <p id="remaining">12</p>
+            </div>
+        </section>
+
+        <section class="progress-section">
+            <div class="progress-info">
+                <span>Testing Progress</span>
+                <span id="progressText">0%</span>
+            </div>
+            <div class="progress-track">
+                <div id="progressBar"></div>
+            </div>
+        </section>
+
+        <section class="instructions">
+            <h2>Testing Instructions</h2>
+            <ol>
+                <li>Click "Open TaskFlow Application".</li>
+                <li>Perform the actions described in each test case.</li>
+                <li>Compare the actual result with the expected result.</li>
+                <li>Return to this page and select Pass or Fail.</li>
+                <li>Write a note if a test fails.</li>
+            </ol>
+            <p>
+                These are manual system tests. You must interact with the
+                actual TaskFlow application to verify each result.
+            </p>
+        </section>
+
+        <section>
+            <h2>System Test Cases</h2>
+            <div id="testContainer"></div>
+        </section>
+
+        <section class="final-result">
+            <h2>Final Test Result</h2>
+            <p id="finalMessage">Testing has not been completed yet.</p>
+
+            <button onclick="showReport()">View Test Report</button>
+            <button class="reset-btn" onclick="resetTests()">
+                Reset Results
+            </button>
+
+            <pre id="report"></pre>
+        </section>
+    </main>
+
+    <script>
+        // All system test cases
+        const testCases = [
+            {
+                id: "ST01",
+                name: "Add New Task",
+                steps: "Open TaskFlow. Enter a task title and description. Click Add Task.",
+                expected: "The new task should appear in the task list."
+            },
+            {
+                id: "ST02",
+                name: "Edit Existing Task",
+                steps: "Click Edit on an existing task. Change its title and save.",
+                expected: "The task should display the updated information."
+            },
+            {
+                id: "ST03",
+                name: "Delete Task",
+                steps: "Click Delete on an existing task and confirm if prompted.",
+                expected: "The selected task should disappear from the list."
+            },
+            {
+                id: "ST04",
+                name: "Complete Task",
+                steps: "Mark a pending task as completed.",
+                expected: "The task status should change to completed."
+            },
+            {
+                id: "ST05",
+                name: "Search Task",
+                steps: "Enter an existing task title in the search box.",
+                expected: "Only matching tasks should be displayed."
+            },
+            {
+                id: "ST06",
+                name: "All Tasks Filter",
+                steps: "Select the All filter.",
+                expected: "Both pending and completed tasks should be displayed."
+            },
+            {
+                id: "ST07",
+                name: "Pending Tasks Filter",
+                steps: "Select the Pending filter.",
+                expected: "Only pending tasks should be displayed."
+            },
+            {
+                id: "ST08",
+                name: "Completed Tasks Filter",
+                steps: "Select the Completed filter.",
+                expected: "Only completed tasks should be displayed."
+            },
+            {
+                id: "ST09",
+                name: "Dashboard Count",
+                steps: "Add tasks and complete some of them. Check the dashboard.",
+                expected: "Total, pending, and completed counts should be correct."
+            },
+            {
+                id: "ST10",
+                name: "Progress Calculation",
+                steps: "Complete some tasks and check the progress bar.",
+                expected: "The progress percentage should match completed tasks."
+            },
+            {
+                id: "ST11",
+                name: "Data Persistence",
+                steps: "Add a task, refresh the browser, and check the task list.",
+                expected: "The saved task should still appear after refreshing."
+            },
+            {
+                id: "ST12",
+                name: "Input Validation",
+                steps: "Try submitting the form without entering a task title.",
+                expected: "The application should prevent an empty task from being added."
+            }
+        ];
+
+        const STORAGE_KEY = "taskflow_system_test_results";
+
+        // Load saved results or create an empty result object
+        let results = JSON.parse(
+            localStorage.getItem(STORAGE_KEY) || "{}"
+        );
+
+        // Save testing results
+        function saveResults() {
+            localStorage.setItem(
+                STORAGE_KEY,
+                JSON.stringify(results)
+            );
+            updateSummary();
+        }
+
+        // Create test case cards
+        function renderTests() {
+            const container = document.getElementById("testContainer");
+            container.innerHTML = "";
+
+            testCases.forEach(test => {
+                const saved = results[test.id] || {
+                    status: "Not Tested",
+                    notes: ""
+                };
+
+                const card = document.createElement("div");
+                card.className = "test-card";
+
+                const heading = document.createElement("h3");
+                heading.textContent = test.id + " - " + test.name;
+
+                const steps = document.createElement("p");
+                steps.innerHTML = "<strong>Steps:</strong> ";
+                steps.appendChild(document.createTextNode(test.steps));
+
+                const expected = document.createElement("p");
+                expected.innerHTML = "<strong>Expected Result:</strong> ";
+                expected.appendChild(document.createTextNode(test.expected));
+
+                const statusLabel = document.createElement("label");
+                statusLabel.textContent = "Test Status";
+
+                const select = document.createElement("select");
+
+                ["Not Tested", "Pass", "Fail", "Blocked"].forEach(status => {
+                    const option = document.createElement("option");
+                    option.value = status;
+                    option.textContent = status;
+                    select.appendChild(option);
+                });
+
+                select.value = saved.status;
+
+                select.addEventListener("change", function() {
+                    results[test.id] = {
+                        status: select.value,
+                        notes: notes.value
+                    };
+                    saveResults();
+                    updateCardStyle(card, select.value);
+                });
+
+                const notesLabel = document.createElement("label");
+                notesLabel.textContent = "Testing Notes";
+
+                const notes = document.createElement("textarea");
+                notes.placeholder = "Write actual result or issue...";
+                notes.value = saved.notes;
+
+                notes.addEventListener("input", function() {
+                    results[test.id] = {
+                        status: select.value,
+                        notes: notes.value
+                    };
+                    localStorage.setItem(
+                        STORAGE_KEY,
+                        JSON.stringify(results)
+                    );
+                });
+
+                card.appendChild(heading);
+                card.appendChild(steps);
+                card.appendChild(expected);
+                card.appendChild(statusLabel);
+                card.appendChild(select);
+                card.appendChild(notesLabel);
+                card.appendChild(notes);
+
+                updateCardStyle(card, saved.status);
+                container.appendChild(card);
+            });
+
+            updateSummary();
+        }
+
+        // Update the visual style of a test card
+        function updateCardStyle(card, status) {
+            card.classList.remove("pass", "fail", "blocked");
+
+            if (status === "Pass") {
+                card.classList.add("pass");
+            } else if (status === "Fail") {
+                card.classList.add("fail");
+            } else if (status === "Blocked") {
+                card.classList.add("blocked");
+            }
+        }
+
+        // Update summary and progress
+        function updateSummary() {
+            let passed = 0;
+            let failed = 0;
+            let blocked = 0;
+
+            testCases.forEach(test => {
+                const status = results[test.id]?.status;
+
+                if (status === "Pass") passed++;
+                if (status === "Fail") failed++;
+                if (status === "Blocked") blocked++;
+            });
+
+            const tested = passed + failed + blocked;
+            const remaining = testCases.length - tested;
+            const percentage = Math.round(
+                tested / testCases.length * 100
+            );
+
+            document.getElementById("total").textContent =
+                testCases.length;
+
+            document.getElementById("passed").textContent = passed;
+            document.getElementById("failed").textContent = failed;
+            document.getElementById("remaining").textContent = remaining;
+
+            document.getElementById("progressText").textContent =
+                percentage + "%";
+
+            document.getElementById("progressBar").style.width =
+                percentage + "%";
+
+            const message = document.getElementById("finalMessage");
+
+            if (tested === 0) {
+                message.textContent = "Testing has not been completed yet.";
+            } else if (failed > 0) {
+                message.textContent =
+                    "Testing completed with " + failed + " failed test(s). Fix the issues and retest.";
+            } else if (remaining === 0) {
+                message.textContent =
+                    "All tests passed successfully!";
+            } else {
+                message.textContent =
+                    "Testing is in progress. " + remaining + " test(s) remain.";
+            }
+        }
+
+        // Generate a text report
+        function showReport() {
+            let reportText = "TASKFLOW - SYSTEM TESTING REPORT\n";
+            reportText += "================================\n\n";
+
+            let passed = 0;
+            let failed = 0;
+            let blocked = 0;
+            let notTested = 0;
+
+            testCases.forEach(test => {
+                const result = results[test.id] || {
+                    status: "Not Tested",
+                    notes: ""
+                };
+
+                reportText += test.id + " - " + test.name + "\n";
+                reportText += "Status: " + result.status + "\n";
+                reportText += "Expected: " + test.expected + "\n";
+                reportText += "Notes: " + (result.notes || "No notes") + "\n\n";
+
+                if (result.status === "Pass") passed++;
+                else if (result.status === "Fail") failed++;
+                else if (result.status === "Blocked") blocked++;
+                else notTested++;
+            });
+
+            reportText += "================================\n";
+            reportText += "SUMMARY\n";
+            reportText += "Total Tests: " + testCases.length + "\n";
+            reportText += "Passed: " + passed + "\n";
+            reportText += "Failed: " + failed + "\n";
+            reportText += "Blocked: " + blocked + "\n";
+            reportText += "Not Tested: " + notTested + "\n";
+
+            document.getElementById("report").textContent = reportText;
+        }
+
+        // Reset all testing results
+        function resetTests() {
+            const confirmReset = confirm(
+                "Are you sure you want to reset all system test results?"
+            );
+
+            if (confirmReset) {
+                results = {};
+                localStorage.removeItem(STORAGE_KEY);
+                renderTests();
+                document.getElementById("report").textContent = "";
+            }
+        }
+
+        // Start the test dashboard
+        renderTests();
+    </script>
+
+</body>
+</html>
